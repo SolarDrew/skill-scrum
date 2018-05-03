@@ -17,8 +17,24 @@ async def trigger_scrum(opsdroid, config, message):
 async def report_scrum(opsdroid, config, message):
     """Get scrum input from users and report back into the main room when they've said all three things"""
 
-    # Strip the command bit from the message
+    scrum_info = opsdroid.memory.get('scrum_info')
+    if message.user not in scrum_info.keys():
+        return
 
-    # Add report to memory
+    for command in ["!yesterday", "!today", "!blockers"]:
+        if command in message.text:
+            # Strip the command bit from the message
+            report = message.replace(command, '')
+            # Add report to memory
+            scrum_info[message.user][command] = report
+            opsdroid.memory.put('scrum_info', scrum_info)
 
     # If all three things have been reported, sent that info back to the main room
+    reports = scrum_info[message.user]
+    reported = reports.keys()
+    if "!yesterday" in reported and "!today" in reported and "!blockers" in reported:
+        await message.respond(f"""{message.user}'s scrum report:
+        - *Yesterday:* {reports["!yesterday"]}
+        - *Today:* {reports["!today"]}
+        - *Blockers:* {reports["!blockers"]}
+        """)
